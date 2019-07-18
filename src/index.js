@@ -6,7 +6,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-
+const jwt = require('express-jwt');
+const jwksRsa = require('jwks-rsa');
 
 // defining the Express app
 const app = express();
@@ -15,6 +16,7 @@ const app = express();
 const {startDatabase} = require('./database/mongo');
 const {insertAd, getAds} = require('./database/ads');
 const {deleteAd, updateAd} = require('./database/ads');
+
 
 // adding Helmet to enhance your API's security
 app.use(helmet());
@@ -32,6 +34,24 @@ app.use(morgan('combined'));
 app.get('/', async (req, res) => {
     res.send(await getAds());
   });
+
+  const checkJwt = jwt({
+    secret: jwksRsa.expressJwtSecret({
+      cache: true,
+      rateLimit: true,
+      jwksRequestsPerMinute: 5,
+      jwksUri: `https://dev-vv4xfie6.auth0.com/.well-known/jwks.json`
+    }),
+  
+    // Validate the audience and the issuer.
+    audience: 'https://express-ads-api',
+    issuer: `https://dev-vv4xfie6.auth0.com/`,
+    algorithms: ['RS256']
+  });
+  
+//Calling the Auth0 function that checks for a valid JSON Web Token a.k.a. 'JWT'
+  app.use(checkJwt);
+
 
  // endpoint to insert a new ad 
   app.post('/', async (req, res) => {
